@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: deepfake_user
+      POSTGRES_PASSWORD: deepfake_password
+      POSTGRES_DB: deepfake_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://deepfake_user:deepfake_password@db:5432/deepfake_db
+      - SECRET_KEY=your-super-secret-key
+      - ALGORITHM=HS256
+      - UPLOAD_FOLDER=uploads
+      - MODEL_PATH=models/deepfake_detector.pth
+    volumes:
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
